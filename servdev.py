@@ -1,7 +1,7 @@
 import sys
 import paramiko
 import json
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel, QLineEdit, QDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel, QLineEdit, QDialog, QFileDialog
 
 class RemoteServerApp(QMainWindow):
     def __init__(self):
@@ -60,6 +60,7 @@ class RemoteServerApp(QMainWindow):
         self.port = selected_server['port']
         self.username = selected_server['username']
         self.password = selected_server['password']
+        self.private_key_path = selected_server.get('private_key_path', None)
 
     def load_servers(self):
         # Загрузка данных о серверах из файла (или базы данных)
@@ -79,15 +80,20 @@ class RemoteServerApp(QMainWindow):
             json.dump(self.servers, file, indent=4)
 
     def connect_to_server(self):
-        if not self.host or not self.username or not self.password:
-            self.output_text.append('Выберите сервер для подключения.')
+        if not self.host or not self.username:
+            self.output_text.append('Выберите сервер и введите имя пользователя.')
             return
 
         self.ssh_client = paramiko.SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            self.ssh_client.connect(self.host, self.port, self.username, self.password)
+            if self.private_key_path:
+                private_key = paramiko.RSAKey(filename=self.private_key_path)
+                self.ssh_client.connect(self.host, self.port, self.username, pkey=private_key)
+            else:
+                self.ssh_client.connect(self.host, self.port, self.username, self.password)
+
             self.output_text.append('Подключение к серверу выполнено успешно.')
         except Exception as e:
             self.output_text.append(f'Ошибка подключения: {str(e)}')
@@ -117,7 +123,8 @@ class RemoteServerApp(QMainWindow):
                 'host': dialog.host_line.text(),
                 'port': int(dialog.port_line.text()),
                 'username': dialog.username_line.text(),
-                'password': dialog.password_line.text()
+                'password': dialog.password_line.text(),
+                'private_key_path': dialog.private_key_line.text()  # Добавляем путь к ключу SSH
             }
             self.servers.append(new_server)
             self.server_combo.addItem(new_server['name'])
@@ -137,6 +144,7 @@ class RemoteServerApp(QMainWindow):
         dialog.port_line.setText(str(selected_server['port']))
         dialog.username_line.setText(selected_server['username'])
         dialog.password_line.setText(selected_server['password'])
+        dialog.private_key_line.setText(selected_server.get('private_key_path', ''))  # Загружаем путь к ключу SSH
 
         if dialog.exec_() == QDialog.Accepted:
             edited_server = {
@@ -144,7 +152,8 @@ class RemoteServerApp(QMainWindow):
                 'host': dialog.host_line.text(),
                 'port': int(dialog.port_line.text()),
                 'username': dialog.username_line.text(),
-                'password': dialog.password_line.text()
+                'password': dialog.password_line.text(),
+                'private_key_path': dialog.private_key_line.text()  # Сохраняем путь к ключу SSH
             }
             self.servers[self.server_combo.currentIndex()] = edited_server
             self.server_combo.setItemText(self.server_combo.currentIndex(), edited_server['name'])
@@ -155,7 +164,7 @@ class ServerDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle('Добавить сервер')
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 400, 250)
 
         layout = QVBoxLayout()
 
@@ -184,11 +193,28 @@ class ServerDialog(QDialog):
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_line)
 
+        self.private_key_label = QLabel('Путь к ключу SSH:')
+        self.private_key_line = QLineEdit()
+        layout.addWidget(self.private_key_label)
+        layout.addWidget(self.private_key_line)
+
+        self.browse_button = QPushButton('Обзор')
+        self.browse_button.clicked.connect(self.browse_private_key)
+        layout.addWidget(self.browse_button)
+
         self.add_button = QPushButton('Добавить')
         self.add_button.clicked.connect(self.accept)
         layout.addWidget(self.add_button)
 
         self.setLayout(layout)
+
+    def browse_private_key(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+
+        file_path, _ = QFileDialog.getOpenFileName(self, "Выберите ключ SSH", "", "All Files (*);;Private Key Files (*.pem *.ppk)", options=options)
+        if file_path:
+            self.private_key_line.setText(file_path)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
