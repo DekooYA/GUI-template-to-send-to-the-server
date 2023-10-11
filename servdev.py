@@ -9,7 +9,6 @@ class RemoteServerApp(QMainWindow):
 
         self.init_ui()
 
-        # Загрузка данных о серверах из файла
         self.load_servers()
 
     def init_ui(self):
@@ -54,7 +53,6 @@ class RemoteServerApp(QMainWindow):
         self.servers = []
 
     def update_connection_details(self):
-        # Обновление полей для подключения на основе выбранного сервера
         selected_server = self.servers[self.server_combo.currentIndex()]
         self.host = selected_server['host']
         self.port = selected_server['port']
@@ -63,7 +61,6 @@ class RemoteServerApp(QMainWindow):
         self.private_key_path = selected_server.get('private_key_path', None)
 
     def load_servers(self):
-        # Загрузка данных о серверах из файла (или базы данных)
         try:
             with open('servers.json', 'r') as file:
                 self.servers = json.load(file)
@@ -71,11 +68,9 @@ class RemoteServerApp(QMainWindow):
                 for server in self.servers:
                     self.server_combo.addItem(server['name'])
         except FileNotFoundError:
-            # Если файл не найден, создайте пустой список
             self.servers = []
 
     def save_servers(self):
-        # Сохранение данных о серверах в файл (или базу данных)
         with open('servers.json', 'w') as file:
             json.dump(self.servers, file, indent=4)
 
@@ -114,17 +109,15 @@ class RemoteServerApp(QMainWindow):
             self.output_text.append(f'Результат выполнения команды:\n{output}')
 
     def add_server(self):
-        # Откройте диалоговое окно для ввода информации о новом сервере
         dialog = ServerDialog(self)
         if dialog.exec_() == QDialog.Accepted:
-            # Получите информацию о новом сервере из диалогового окна и добавьте его в список серверов
             new_server = {
                 'name': dialog.name_line.text(),
                 'host': dialog.host_line.text(),
                 'port': int(dialog.port_line.text()),
                 'username': dialog.username_line.text(),
                 'password': dialog.password_line.text(),
-                'private_key_path': dialog.private_key_line.text()  # Добавляем путь к ключу SSH
+                'private_key_path': dialog.private_key_line.text()  
             }
             self.servers.append(new_server)
             self.server_combo.addItem(new_server['name'])
@@ -144,7 +137,7 @@ class RemoteServerApp(QMainWindow):
         dialog.port_line.setText(str(selected_server['port']))
         dialog.username_line.setText(selected_server['username'])
         dialog.password_line.setText(selected_server['password'])
-        dialog.private_key_line.setText(selected_server.get('private_key_path', ''))  # Загружаем путь к ключу SSH
+        dialog.private_key_line.setText(selected_server.get('private_key_path', ''))  
 
         if dialog.exec_() == QDialog.Accepted:
             edited_server = {
@@ -153,7 +146,7 @@ class RemoteServerApp(QMainWindow):
                 'port': int(dialog.port_line.text()),
                 'username': dialog.username_line.text(),
                 'password': dialog.password_line.text(),
-                'private_key_path': dialog.private_key_line.text()  # Сохраняем путь к ключу SSH
+                'private_key_path': dialog.private_key_line.text()  
             }
             self.servers[self.server_combo.currentIndex()] = edited_server
             self.server_combo.setItemText(self.server_combo.currentIndex(), edited_server['name'])
