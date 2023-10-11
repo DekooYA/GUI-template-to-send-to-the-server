@@ -9,6 +9,7 @@ class RemoteServerApp(QMainWindow):
 
         self.init_ui()
 
+
         self.load_servers()
 
     def init_ui(self):
