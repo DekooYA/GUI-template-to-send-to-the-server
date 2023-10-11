@@ -1,11 +1,11 @@
 import sys
 import paramiko
 import json
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel, QLineEdit
 
 class RemoteServerApp(QMainWindow):
     def __init__(self):
-        super().__init__()
+        super().__init()
 
         self.init_ui()
 
@@ -39,33 +39,15 @@ class RemoteServerApp(QMainWindow):
         self.layout.addWidget(self.execute_button)
         self.layout.addWidget(self.output_text)
 
+        self.add_server_button = QPushButton('Добавить сервер')
+        self.add_server_button.clicked.connect(self.add_server)
+        self.layout.addWidget(self.add_server_button)
+
         self.central_widget.setLayout(self.layout)
 
         self.ssh_client = None
 
         self.servers = []
-
-        # Добавление серверов (эти данные можно загружать из файла, базы данных и т.д.)
-        self.servers = [
-            {
-                'name': 'Сервер 1',
-                'host': 'your_remote_server1_address',
-                'port': 22,
-                'username': 'your_username1',
-                'password': 'your_password1'
-            },
-            {
-                'name': 'Сервер 2',
-                'host': 'your_remote_server2_address',
-                'port': 22,
-                'username': 'your_username2',
-                'password': 'your_password2'
-            }
-        ]
-
-        # Заполнение выпадающего списка серверов
-        for server in self.servers:
-            self.server_combo.addItem(server['name'])
 
     def update_connection_details(self):
         # Обновление полей для подключения на основе выбранного сервера
@@ -120,6 +102,62 @@ class RemoteServerApp(QMainWindow):
             self.output_text.append(f'Ошибка выполнения команды: {error}')
         else:
             self.output_text.append(f'Результат выполнения команды:\n{output}')
+
+    def add_server(self):
+        # Откройте диалоговое окно для ввода информации о новом сервере
+        dialog = ServerDialog(self)
+        if dialog.exec_() == dialog.Accepted:
+            # Получите информацию о новом сервере из диалогового окна и добавьте его в список серверов
+            new_server = {
+                'name': dialog.name_line.text(),
+                'host': dialog.host_line.text(),
+                'port': int(dialog.port_line.text()),
+                'username': dialog.username_line.text(),
+                'password': dialog.password_line.text()
+            }
+            self.servers.append(new_server)
+            self.server_combo.addItem(new_server['name'])
+            self.save_servers()
+
+class ServerDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle('Добавить сервер')
+        self.setGeometry(100, 100, 300, 200)
+
+        layout = QVBoxLayout()
+
+        self.name_label = QLabel('Имя сервера:')
+        self.name_line = QLineEdit()
+        layout.addWidget(self.name_label)
+        layout.addWidget(self.name_line)
+
+        self.host_label = QLabel('Адрес сервера:')
+        self.host_line = QLineEdit()
+        layout.addWidget(self.host_label)
+        layout.addWidget(self.host_line)
+
+        self.port_label = QLabel('Порт:')
+        self.port_line = QLineEdit()
+        layout.addWidget(self.port_label)
+        layout.addWidget(self.port_line)
+
+        self.username_label = QLabel('Имя пользователя:')
+        self.username_line = QLineEdit()
+        layout.addWidget(self.username_label)
+        layout.addWidget(self.username_line)
+
+        self.password_label = QLabel('Пароль:')
+        self.password_line = QLineEdit()
+        layout.addWidget(self.password_label)
+        layout.addWidget(self.password_line)
+
+        self.add_button = QPushButton('Добавить')
+        self.add_button.clicked.connect(self.accept)
+        layout.addWidget(self.add_button)
+
+        self.setLayout(layout)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
