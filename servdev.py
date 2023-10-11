@@ -43,6 +43,10 @@ class RemoteServerApp(QMainWindow):
         self.add_server_button.clicked.connect(self.add_server)
         self.layout.addWidget(self.add_server_button)
 
+        self.edit_server_button = QPushButton('Редактировать сервер')
+        self.edit_server_button.clicked.connect(self.edit_server)
+        self.layout.addWidget(self.edit_server_button)
+
         self.central_widget.setLayout(self.layout)
 
         self.ssh_client = None
@@ -117,6 +121,33 @@ class RemoteServerApp(QMainWindow):
             }
             self.servers.append(new_server)
             self.server_combo.addItem(new_server['name'])
+            self.save_servers()
+
+    def edit_server(self):
+        if self.server_combo.currentIndex() == -1:
+            self.output_text.append('Выберите сервер для редактирования.')
+            return
+
+        selected_server = self.servers[self.server_combo.currentIndex()]
+
+        dialog = ServerDialog(self)
+        dialog.setWindowTitle('Редактировать сервер')
+        dialog.name_line.setText(selected_server['name'])
+        dialog.host_line.setText(selected_server['host'])
+        dialog.port_line.setText(str(selected_server['port']))
+        dialog.username_line.setText(selected_server['username'])
+        dialog.password_line.setText(selected_server['password'])
+
+        if dialog.exec_() == QDialog.Accepted:
+            edited_server = {
+                'name': dialog.name_line.text(),
+                'host': dialog.host_line.text(),
+                'port': int(dialog.port_line.text()),
+                'username': dialog.username_line.text(),
+                'password': dialog.password_line.text()
+            }
+            self.servers[self.server_combo.currentIndex()] = edited_server
+            self.server_combo.setItemText(self.server_combo.currentIndex(), edited_server['name'])
             self.save_servers()
 
 class ServerDialog(QDialog):
