@@ -1,11 +1,11 @@
 import sys
 import paramiko
 import json
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel, QLineEdit, QDialog
 
 class RemoteServerApp(QMainWindow):
     def __init__(self):
-        super().__init()
+        super().__init__()
 
         self.init_ui()
 
@@ -106,7 +106,7 @@ class RemoteServerApp(QMainWindow):
     def add_server(self):
         # Откройте диалоговое окно для ввода информации о новом сервере
         dialog = ServerDialog(self)
-        if dialog.exec_() == dialog.Accepted:
+        if dialog.exec_() == QDialog.Accepted:
             # Получите информацию о новом сервере из диалогового окна и добавьте его в список серверов
             new_server = {
                 'name': dialog.name_line.text(),
