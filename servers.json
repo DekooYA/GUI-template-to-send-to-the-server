@@ -1,10 +1,11 @@
 [
     {
         "name": "Game2",
-        "host": "172.20.7.100",
+        "host": "162.55.99.109",
         "port": 22,
-        "username": "root",
-        "password": "adfdaf"
+        "username": "dekoo",
+        "password": "Subaru380am",
+        "private_key_path": "C:/Users/Dekoo/.ssh/\u041d\u043e\u0432\u0430\u044f \u043f\u0430\u043f\u043a\u0430/id_rsa"
     },
     {
         "name": "12312",
