@@ -1,9 +1,12 @@
 import sys
 import paramiko
 import json
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, QComboBox, QLabel, QLineEdit, QDialog, QFileDialog, QPlainTextEdit
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit, 
+    QComboBox, QLabel, QLineEdit, QDialog, QFileDialog, QPlainTextEdit, 
+    QDialogButtonBox
+)
 from PyQt5.QtCore import pyqtSignal
-from qtermwidget import QTermWidget
 
 class RemoteServerApp(QMainWindow):
     def __init__(self):
@@ -41,9 +44,8 @@ class RemoteServerApp(QMainWindow):
         self.remove_server_button = QPushButton('Удалить сервер')
         self.remove_server_button.clicked.connect(self.remove_server)
         self.layout.addWidget(self.remove_server_button)
-        self.terminal_widget = QTermWidget()
+        self.terminal_widget = QPlainTextEdit()
         self.layout.addWidget(self.terminal_widget)
-        self.terminal_widget.set_cwd('~')
         self.central_widget.setLayout(self.layout)
         self.ssh_client = None
         self.servers = []
@@ -74,18 +76,37 @@ class RemoteServerApp(QMainWindow):
         if not self.host or not self.username:
             self.output_text.append('Выберите сервер и введите имя пользователя.')
             return
-        self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        self.output_text.clear()
+        self.disconnect_from_server()  # Disconnect before connecting again.
+
+        print(f"Trying to connect to {self.host}:{self.port} with user {self.username}...")
+
         try:
+            self.ssh_client = paramiko.SSHClient()
+            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
             if self.private_key_path:
                 private_key = paramiko.RSAKey(filename=self.private_key_path)
                 self.ssh_client.connect(self.host, self.port, self.username, pkey=private_key)
             else:
                 self.ssh_client.connect(self.host, self.port, self.username, self.password)
+
+            print("Конект, есть!")
+            self.output_text.append("Конект, есть!")
+            self.command_input.setReadOnly(False)  # Enable command input
         except paramiko.AuthenticationException:
-            self.output_text.append('Ошибка аутентификации. Проверьте учетные данные.')
-            self.ssh_client.close()
-            self.ssh_client = None
+            error_message = 'Конекта, нет'
+            print(error_message)
+            self.output_text.append(error_message)
+            self.disconnect_from_server()
+        except Exception as e:
+            error_message = f"Что-то пошло не так: {e}"
+            print(error_message)
+            self.output_text.append(error_message)
+            self.disconnect_from_server()
+
+        sys.stdout.flush()  # Force print statements to be flushed to console
 
     def execute_command(self):
         if not self.ssh_client:
@@ -145,6 +166,12 @@ class RemoteServerApp(QMainWindow):
         del self.servers[selected_index]
         self.server_combo.removeItem(selected_index)
         self.save_servers()
+
+    def disconnect_from_server(self):
+        if self.ssh_client:
+            self.ssh_client.close()
+            self.ssh_client = None
+            self.command_input.setReadOnly(True)  # Disable command input
 
 class ServerDialog(QDialog):
     def __init__(self, parent=None):
